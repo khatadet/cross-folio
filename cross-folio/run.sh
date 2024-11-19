@@ -1,0 +1,5 @@
+#!/bin/sh
+dirpath=$(dirname "$(readlink -f "$0")")
+# echo "Directory ปัจจุบันของไฟล์คือ: $dirpath"
+cd "$dirpath"
+yarn start
