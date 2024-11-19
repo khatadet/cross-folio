@@ -17,7 +17,7 @@ root.render(
     <DrawerAppBar></DrawerAppBar>
      <BrowserRouter>
       <Routes>
-        <Route path="/Home" element={<App />} />
+        <Route path="/" element={<App />} />
           {/* เพิ่มเส้นทางอื่น ๆ ที่นี่ */}
        
         <Route path="/DataVisualization" element={<DataVisualization />}/>

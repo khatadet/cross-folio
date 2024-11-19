@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from typing import Union
 app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import  Session
+import MVC as MVC
 origins = [
     "http://localhost:3000",  # ต้นทางของแอป React ของคุณ
 ]
@@ -16,13 +18,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-subject_init = { "detail" :"string",
-"url":"#string"}
-subject = [{'subject_name':i,'subject':[subject_init,subject_init]} for i in ['a' , 'b' , 'c']]
-semester = list()
-for i in range(2562,2568):
-    for j in range(1,4):
-        semester.append({'semester_name':f'ภาคการศึกษาที่ {j} / {i}','semester':subject})
+
 """
 semester
     [{
@@ -45,7 +41,20 @@ class add_subject(BaseModel):
 
 @app.get("/")
 async def get_data():
-    return {"res": semester}
+
+    with Session(MVC.engine) as session:
+        subjects = MVC.get_academic_years_with_relations(session)
+        res = MVC.convert_academic_years_to_dict(subjects)
+
+        return {"res": res}
+
+@app.get("/All_data")
+async def get_data1():
+    with Session(MVC.engine) as session:
+        subjects = MVC.get_academic_years_with_relations(session)
+        res = MVC.convert_academic_years_to_dict(subjects)
+
+        return {"res": res}
 
 @app.get("/semester")
 async def get_semester():
