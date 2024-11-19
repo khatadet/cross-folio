@@ -1,4 +1,4 @@
 # cross-folio
 
-yarn install --check-file
-pip install "fastapi[standard]"
+# yarn install --check-file
+# pip install "fastapi[standard]"
