@@ -118,3 +118,6 @@ dist
 
 # etc 
 *.gpt
+
+*/__pycache__/*
+*.pyc
