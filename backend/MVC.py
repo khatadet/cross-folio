@@ -38,6 +38,7 @@ class Subject(SQLModel, table=True):
     __tablename__ = "subject"  # ชื่อตาราง วิชาที่สอน
     id: Optional[int] = Field(default=None, primary_key=True)  # รหัส ID ที่เพิ่มเองอัตโนมัติ
     name: str = Field(unique=True)  # ชื่อวิชา ที่ไม่ซ้ำกัน (unique)
+    code: str = Field(unique=True)  # code ที่ไม่ซ้ำกัน (unique)
     education_data: List["EducationData"] = Relationship(back_populates="subject")  # ความสัมพันธ์กับ EducationData
 
 class EducationData(SQLModel, table=True):
@@ -118,7 +119,7 @@ def convert_academic_years_to_dict(academic_years: List[AcademicYear]) -> List[d
         for sem in ay.semesters:
             sem_dict = {
                 "id": sem.id,
-                "semester_name": sem.semester_name.name,
+                "name": sem.semester_name.name,
                 "education_data": []
             }
             for edu_data in sem.education_data:
@@ -127,7 +128,8 @@ def convert_academic_years_to_dict(academic_years: List[AcademicYear]) -> List[d
                     "detail": edu_data.detail,
                     "subject": {
                         "id": edu_data.subject.id,
-                        "name": edu_data.subject.name
+                        "name": edu_data.subject.name,
+                        "code": edu_data.subject.code
                     }
                 }
                 sem_dict["education_data"].append(edu_dict)
@@ -182,6 +184,18 @@ def create_semester(session: Session, academic_year_id: int, semester_name_id: i
 def get_semester(session: Session, semester_id: int):
     return session.get(Semester, semester_id)
 
+def get_semester_by_year_name(session: Session, academic_year_id: int, semester_name_id: int):
+
+    semesters = session.exec(select(Semester)).all()
+    semester_res =  [i for i in semesters if i.academic_year_id == academic_year_id and i.semester_name_id == semester_name_id]
+    if len(semester_res) == 0:
+        semester = create_semester(session,academic_year_id,semester_name_id)
+        print('new')
+        return semester
+    else :
+        print('old')
+        return semester_res[0]
+
 def get_all_semesters(session: Session):
     return session.exec(select(Semester)).all()
 
@@ -208,8 +222,8 @@ def delete_semester(session: Session, semester_id: int):
 
 # ฟังก์ชันสำหรับตาราง Subject (วิชาที่สอน)
 
-def create_subject(session: Session, name: str):
-    subject = Subject(name=name)
+def create_subject(session: Session, name: str, code :str):
+    subject = Subject(name=name,code=code)
     session.add(subject)
     session.commit()
     session.refresh(subject)
@@ -221,10 +235,11 @@ def get_subject(session: Session, subject_id: int):
 def get_all_subjects(session: Session):
     return session.exec(select(Subject)).all()
 
-def update_subject(session: Session, subject_id: int, name: str):
+def update_subject(session: Session, subject_id: int, name: str, code :str):
     subject = session.get(Subject, subject_id)
     if subject:
         subject.name = name
+        subject.code = code
         session.add(subject)
         session.commit()
         session.refresh(subject)
@@ -256,6 +271,12 @@ def get_education_data(session: Session, education_data_id: int):
 def get_all_education_data(session: Session):
     return session.exec(select(EducationData)).all()
 
+def get_education_data_by_semester_subject(session: Session, semester_id: int, subject_id: int):
+    education_data = session.exec(select(EducationData)).all()
+    res = [i for i in education_data if i.semester_id == semester_id and i.subject_id == subject_id]
+    return res
+    
+
 def update_education_data(session: Session, education_data_id: int, detail: str, semester_id: int, subject_id: int):
     education_data = session.get(EducationData, education_data_id)
     if education_data:
@@ -269,6 +290,17 @@ def update_education_data(session: Session, education_data_id: int, detail: str,
     else:
         return None
 
+def update_detail_education_data(session: Session, education_data_id: int, detail: str):
+    education_data = session.get(EducationData, education_data_id)
+    if education_data:
+        education_data.detail = detail
+        session.add(education_data)
+        session.commit()
+        session.refresh(education_data)
+        return education_data
+    else:
+        return None
+    
 def delete_education_data(session: Session, education_data_id: int):
     education_data = session.get(EducationData, education_data_id)
     if education_data:
@@ -291,6 +323,33 @@ def check_and_create_required_data(session: Session):
     else:
         print(f"AcademicYear {academic_year.name} already exists.")
 
+    # ตรวจสอบชื่อภาคการศึกษา "1", "2", "3"
+    semester_names =  [ "ภาคการศึกษาที่ " + i for i in ["1", "2", "3"] ]
+    for sem_name in semester_names:
+        semester_name = session.exec(select(SemesterName).where(SemesterName.name == sem_name)).first()
+        if not semester_name:
+            semester_name = create_semester_name(session, sem_name)
+            print(f"Created SemesterName: {semester_name.name}")
+        else:
+            print(f"SemesterName {semester_name.name} already exists.")
+
+    # ตรวจสอบและสร้างภาคการศึกษา
+    for sem_name in semester_names:
+        semester_name = session.exec(select(SemesterName).where(SemesterName.name == sem_name)).first()
+        semester = session.exec(
+            select(Semester)
+            .where(Semester.academic_year_id == academic_year.id)
+            .where(Semester.semester_name_id == semester_name.id)
+        ).first()
+        if not semester:
+            semester = create_semester(session, academic_year.id, semester_name.id)
+            print(f"Created Semester for AcademicYear {academic_year.name} and SemesterName {semester_name.name}")
+        else:
+            print(f"Semester for AcademicYear {academic_year.name} and SemesterName {semester_name.name} already exists.")
+
+    
+    #------------------------------------------------------------
+
     # ตรวจสอบปีการศึกษาปัจจุบัน
     current_year = datetime.now().year + 543 - 1 # แปลงเป็นปีพุทธศักราช
     academic_year_name = "ปีการศึกษา "+str(current_year)
@@ -301,15 +360,7 @@ def check_and_create_required_data(session: Session):
     else:
         print(f"AcademicYear {academic_year.name} already exists.")
 
-    # ตรวจสอบชื่อภาคการศึกษา "1", "2", "3"
-    semester_names =  [ "ภาคการศึกษาที่ " + i for i in ["1", "2", "3"] ]
-    for sem_name in semester_names:
-        semester_name = session.exec(select(SemesterName).where(SemesterName.name == sem_name)).first()
-        if not semester_name:
-            semester_name = create_semester_name(session, sem_name)
-            print(f"Created SemesterName: {semester_name.name}")
-        else:
-            print(f"SemesterName {semester_name.name} already exists.")
+
 
     # ตรวจสอบและสร้างภาคการศึกษา
     for sem_name in semester_names:
@@ -351,9 +402,9 @@ if __name__ == "__main__":
                     print(f"    วิชา: {edu_data.subject.name}, รายละเอียด: {edu_data.detail}")
 
 
-        exit()
+        # exit()
         # สร้างวิชาใหม่
-        subject = create_subject(session, "คณิตศาสตร์")
+        subject = create_subject(session, "คณิตศาสตร์","ENG 23")
         print(f"สร้างวิชา: {subject.name}")
 
         # ดึงและแสดงวิชาทั้งหมด
@@ -363,9 +414,9 @@ if __name__ == "__main__":
             print(f"- {subj.name}")
 
         # อัปเดตชื่อวิชา
-        updated_subject = update_subject(session, subject.id, "คณิตศาสตร์ขั้นสูง")
+        updated_subject = update_subject(session, subject.id, "คณิตศาสตร์ขั้นสูง","ENG 23")
         print(f"อัปเดตชื่อวิชาเป็น: {updated_subject.name}")
-
+        
         # สร้าง EducationData ใหม่
         # ดึงข้อมูลภาคการศึกษาและวิชาที่ต้องการใช้
         semester = session.exec(select(Semester)).first()  # ดึงภาคการศึกษาแรกที่พบ
@@ -386,6 +437,6 @@ if __name__ == "__main__":
         for edu_data in education_datas:
             print(f"- ID: {edu_data.id}, รายละเอียด: {edu_data.detail}")
 
-        # ลบวิชา
-        delete_subject(session, subject.id)
-        print(f"ลบวิชาที่มี ID {subject.id}")
+        # # ลบวิชา
+        # delete_subject(session, subject.id)
+        # print(f"ลบวิชาที่มี ID {subject.id}")

@@ -1,0 +1,21 @@
+.Card {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  margin-right: 4px;
+  margin-left: 4px;
+}
+
+.FormControl {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  margin-right: 4px;
+  margin-left: 4px;
+  min-width: 80;
+  width: 96%;
+}
+
+.FormControl2 {
+  margin: 2%;
+  min-width: 80;
+  width: 96%;
+}

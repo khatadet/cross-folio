@@ -3,45 +3,51 @@ import Card from '@mui/material/Card';
 import Box from '@mui/material/Box';
 import config from '../config';
 import './DataVisualization.css';
-import TableData from './TableData';
-import { interface_semester } from './interface_data';
+import TableData from './Component/TableData';
+// import { interface_year } from './interface_data';
 
 
 const DataVisualization: React.FC = () => {
-  const [data, setData] = useState<Array<interface_semester>>();
+  // const [data, setData] = useState<Array<interface_year>>();
+  const [data, setData] = useState<any>();
+  const [subject, setSubject] = useState<any>();
 
-  useEffect(() => {
-    fetch(config['backend'] + '/'
-      // ,{ mode: 'no-cors' }
-    )
-
-      .then(response => {
-        console.log(response);
-        return response.json();
-
-      })
+  function getList_Data(path: string, setter: Function) {
+    fetch(config['backend'] + path)
+      .then(response => response.json())
       .then(data => {
-        console.log("โหลดข้อมูล");
-        console.log(data);
-        setData(data);
+        const res = data.res;
+        setter(res);
+        console.log('Fetched Data:',path, res);  // Logs fetched data correctly
       })
       .catch(error => {
-        console.error('เกิดข้อผิดพลาดในการดึงข้อมูล:', error);
+        console.error('Error fetching semester year: ', error);
       });
+  }
+
+  useEffect(() => {
+    getList_Data('/getList_subject', setSubject);
+    
+    getList_Data('/', setData);
+    
+    
+    
   },
     []);
 
+  
   return (
     <Card variant="outlined" >
       <Box sx={{ p: 2 }}>
 
 <br/>
         <div>
-          {data ? (
+          { data  && subject ? (
             <div>
 
 
-              <TableData data={data} />
+              <TableData data={data} subject={subject} />
+{/* {JSON.stringify(data)} */}
 
 
             </div>

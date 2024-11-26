@@ -5,7 +5,9 @@ import './index.css';
 import DrawerAppBar from './DrawerAppBar';
 import App from './Home/App';
 import Test from './Test/Test';
-import Create from './Create/Create';
+import Create from './DataVisualization/Component/Create/Create';
+import CreateSubject from './DataVisualization/Component/CreateSubject/CreateSubject';
+
 import DataVisualization from './DataVisualization/DataVisualization';
 import reportWebVitals from './reportWebVitals';
 
@@ -17,12 +19,15 @@ root.render(
     <DrawerAppBar></DrawerAppBar>
      <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />} />
+        {/* <Route path="/" element={<App />} /> */}
           {/* เพิ่มเส้นทางอื่น ๆ ที่นี่ */}
        
         <Route path="/DataVisualization" element={<DataVisualization />}/>
-        <Route path="/Test" element={<Test />}/>
+        <Route path="/" element={<DataVisualization />}/>
+        <Route path="/Home" element={<DataVisualization />}/>
+        {/* <Route path="/Test" element={<Test />}/> */}
         <Route path="/Create" element={<Create />}/>
+        <Route path="/CreateSubject" element={<CreateSubject />}/>
         
       </Routes>
     </BrowserRouter>
